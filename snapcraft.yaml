@@ -1,0 +1,80 @@
+name: node-red
+adopt-info: node-red
+summary: Low-code programming for event-driven applications
+description: Node-RED is a flow based programming application for wiring together hardware devices, APIs and online services in new and interesting ways. For more information see http://nodered.org
+confinement: strict
+grade: stable
+base: core22
+
+architectures:
+  
+  - build-on: armhf
+  - build-on: arm64
+  
+
+apps:
+  node-red:
+    command: bin/startNR
+    daemon: simple
+    restart-condition: on-failure
+    plugs:
+      - audio-playback
+      - bluez
+      - bluetooth-control
+      - camera
+      - gpio
+      - home
+      - network-bind
+      - network
+      - network-observe
+      - pulseaudio
+      - removable-media
+      - serial-port
+  npm:
+    command: bin/npm
+    plugs:
+      - home
+      - network
+  desktop-launch:
+    command: bin/desktop-launch
+    plugs:
+      - desktop
+  nats-cli:
+    command: bin/nats
+    plugs:
+      - home
+      - network
+
+parts:
+  node: # Node.js/npm
+    plugin: dump
+    source:
+      - on armhf: https://nodejs.org/dist/v18.18.2/node-v18.18.2-linux-armv7l.tar.gz
+      - on arm64: https://nodejs.org/dist/v18.18.2/node-v18.18.2-linux-arm64.tar.gz
+      
+
+  node-red:
+    after: [node]
+    plugin: nil
+    source: .
+    stage-packages:
+      - python3
+      - libatomic1
+    override-build: |
+      # Your existing node-red build script
+      
+  nats-cli:
+    plugin: nil
+    override-build: |
+      # Download and install nats-cli binary
+      wget https://github.com/nats-io/natscli/releases/nats-0.1.4-linux-arm64.zip
+      tar -xzf nats-0.1.4-linux-arm64.zip
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      mv nats-0.1.4-linux-arm64/nats $SNAPCRAFT_PART_INSTALL/bin/nats
+
+  settings:
+    plugin: dump
+    source: snap/local/settings
+    organize:
+      start.sh: "bin/startNR"
+      desktop-launch: "bin/desktop-launch"
